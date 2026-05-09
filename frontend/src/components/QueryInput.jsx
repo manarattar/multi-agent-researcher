@@ -13,39 +13,41 @@ export default function QueryInput({ onSubmit, disabled }) {
 
   return (
     <form onSubmit={handleSubmit} className="w-full">
-      <div className="relative">
-        <textarea
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              handleSubmit(e);
-            }
-          }}
-          placeholder="Ask a research question… (e.g. What are the latest advances in quantum computing?)"
-          disabled={disabled}
-          rows={3}
-          className="w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 pr-28 text-sm text-gray-800 placeholder-gray-400 shadow-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 disabled:opacity-50"
-        />
+      <textarea
+        value={question}
+        onChange={(e) => setQuestion(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            handleSubmit(e);
+          }
+        }}
+        placeholder="Ask a research question…"
+        disabled={disabled}
+        rows={3}
+        className="w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800 placeholder-gray-400 shadow-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 disabled:opacity-50"
+      />
+      <div className="mt-2 flex items-center justify-between gap-2">
+        <p className="text-xs text-gray-400 hidden sm:block">
+          Enter to submit · Shift+Enter for new line
+        </p>
+        <p className="text-xs text-gray-400 sm:hidden">Tap to submit</p>
         <button
           type="submit"
           disabled={disabled || !question.trim()}
-          className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-lg bg-violet-600 px-4 py-1.5 text-sm font-medium text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex items-center gap-1.5 rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-40"
         >
           {disabled ? (
             <>
               <Spinner />
-              Researching
+              <span className="hidden sm:inline">Researching…</span>
+              <span className="sm:hidden">Working…</span>
             </>
           ) : (
             "Research"
           )}
         </button>
       </div>
-      <p className="mt-1.5 text-xs text-gray-400">
-        Press Enter to submit · Shift+Enter for new line
-      </p>
     </form>
   );
 }

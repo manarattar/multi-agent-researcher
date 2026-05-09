@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { streamResearch, getSession } from "./api";
 import QueryInput from "./components/QueryInput";
 import AgentTimeline from "./components/AgentTimeline";
@@ -14,6 +14,7 @@ export default function App() {
   const [currentQuestion, setCurrentQuestion] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [activeSessionId, setActiveSessionId] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const abortRef = useRef(false);
 
   async function handleResearch(question) {
@@ -48,6 +49,7 @@ export default function App() {
   }
 
   async function handleSelectHistory(session) {
+    setSidebarOpen(false);
     try {
       const full = await getSession(session.session_id);
       setReport(full);
@@ -73,13 +75,34 @@ export default function App() {
 
   return (
     <div className="flex h-screen bg-gray-50 text-gray-800 font-sans overflow-hidden">
-      {/* Sidebar */}
-      <div className="w-64 shrink-0 border-r border-gray-200 bg-white flex flex-col">
-        <div className="px-4 py-4 border-b border-gray-100">
-          <h1 className="text-base font-bold text-violet-700 tracking-tight">
-            🔬 Research Agent
-          </h1>
-          <p className="text-xs text-gray-400 mt-0.5">5-agent AI pipeline</p>
+      {/* Mobile backdrop */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar — drawer on mobile, fixed column on md+ */}
+      <div className={`
+        fixed inset-y-0 left-0 z-40 w-64 shrink-0 border-r border-gray-200 bg-white flex flex-col
+        transition-transform duration-200 ease-in-out
+        ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
+        md:relative md:translate-x-0
+      `}>
+        <div className="px-4 py-4 border-b border-gray-100 flex items-center justify-between">
+          <div>
+            <h1 className="text-base font-bold text-violet-700 tracking-tight">
+              🔬 Research Agent
+            </h1>
+            <p className="text-xs text-gray-400 mt-0.5">5-agent AI pipeline</p>
+          </div>
+          <button
+            className="md:hidden text-gray-400 hover:text-gray-600 p-1"
+            onClick={() => setSidebarOpen(false)}
+          >
+            ✕
+          </button>
         </div>
         <div className="flex-1 overflow-hidden">
           <HistoryPanel onSelect={handleSelectHistory} activeId={activeSessionId} />
@@ -89,33 +112,45 @@ export default function App() {
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
-        <header className="px-6 py-3 border-b border-gray-200 bg-white flex items-center justify-between">
-          <div className="text-sm text-gray-500">
-            {phase === "idle" && "Ask any research question"}
-            {phase === "researching" && (
-              <span className="text-violet-600 font-medium flex items-center gap-1.5">
-                <Spinner /> Agents working…
-              </span>
-            )}
-            {phase === "complete" && (
-              <span className="text-green-600 font-medium">Research complete</span>
-            )}
-            {phase === "error" && (
-              <span className="text-red-500 font-medium">Error occurred</span>
-            )}
+        <header className="px-3 sm:px-6 py-3 border-b border-gray-200 bg-white flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            {/* Hamburger — mobile only */}
+            <button
+              className="md:hidden shrink-0 p-1 rounded text-gray-500 hover:text-violet-600 transition"
+              onClick={() => setSidebarOpen(v => !v)}
+              aria-label="Toggle history"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            <div className="text-sm text-gray-500 truncate">
+              {phase === "idle" && "Ask any research question"}
+              {phase === "researching" && (
+                <span className="text-violet-600 font-medium flex items-center gap-1.5">
+                  <Spinner /> Agents working…
+                </span>
+              )}
+              {phase === "complete" && (
+                <span className="text-green-600 font-medium">Research complete</span>
+              )}
+              {phase === "error" && (
+                <span className="text-red-500 font-medium">Error occurred</span>
+              )}
+            </div>
           </div>
           {phase !== "idle" && (
             <button
               onClick={handleNewResearch}
-              className="text-xs text-gray-400 hover:text-violet-600 transition"
+              className="shrink-0 text-xs text-gray-400 hover:text-violet-600 transition"
             >
-              + New research
+              + New
             </button>
           )}
         </header>
 
         {/* Content */}
-        <main className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+        <main className="flex-1 overflow-y-auto px-3 sm:px-6 py-4 sm:py-5 space-y-5">
           {/* Query input — always show when idle or researching */}
           {(phase === "idle" || phase === "researching") && (
             <QueryInput

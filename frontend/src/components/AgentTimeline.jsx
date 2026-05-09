@@ -22,27 +22,29 @@ export default function AgentTimeline({ events }) {
         Agent Pipeline
       </h2>
 
-      {/* Agent cards row */}
-      <div className="grid grid-cols-5 gap-2">
-        {AGENTS.map((agent, i) => {
-          const state = agentState[agent.key] ?? { status: "pending", messages: [] };
-          const style = STATUS_STYLE[state.status] ?? STATUS_STYLE.pending;
-          return (
-            <div
-              key={agent.key}
-              className={`relative rounded-xl border-2 p-3 transition-all ${style}`}
-            >
-              {/* connector line */}
-              {i < AGENTS.length - 1 && (
-                <div className="absolute -right-[9px] top-1/2 z-10 -translate-y-1/2 text-gray-300 text-xs">→</div>
-              )}
-              <div className="text-xl mb-1">{agent.icon}</div>
-              <div className="font-semibold text-xs">{agent.label}</div>
-              <div className="text-xs opacity-70 mt-0.5">{agent.desc}</div>
-              <StatusDot status={state.status} />
-            </div>
-          );
-        })}
+      {/* Agent cards row — horizontal scroll on mobile */}
+      <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0 pb-1">
+        <div className="grid grid-cols-5 gap-2" style={{ minWidth: "360px" }}>
+          {AGENTS.map((agent, i) => {
+            const state = agentState[agent.key] ?? { status: "pending", messages: [] };
+            const style = STATUS_STYLE[state.status] ?? STATUS_STYLE.pending;
+            return (
+              <div
+                key={agent.key}
+                className={`relative rounded-xl border-2 p-2 sm:p-3 transition-all ${style}`}
+              >
+                {/* connector line */}
+                {i < AGENTS.length - 1 && (
+                  <div className="absolute -right-[9px] top-1/2 z-10 -translate-y-1/2 text-gray-300 text-xs">→</div>
+                )}
+                <div className="text-lg sm:text-xl mb-1">{agent.icon}</div>
+                <div className="font-semibold text-xs">{agent.label}</div>
+                <div className="text-xs opacity-70 mt-0.5 hidden sm:block">{agent.desc}</div>
+                <StatusDot status={state.status} />
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Event feed */}
