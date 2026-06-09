@@ -1,11 +1,12 @@
 from functools import lru_cache
+
 from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
     openai_api_key: str = ""
     openai_base_url: str = "https://api.openai.com/v1"
-    model_name: str = "llama-3.3-70b-versatile"
+    model_name: str = "gpt-4o-mini"
     tavily_api_key: str = ""
     cors_origins: str = "*"
 
