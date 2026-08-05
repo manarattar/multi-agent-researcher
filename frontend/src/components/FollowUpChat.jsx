@@ -1,12 +1,18 @@
 import { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import { askFollowUp } from "../api";
+import Icon from "./Icon";
 
-export default function FollowUpChat({ sessionId }) {
+export default function FollowUpChat({ sessionId, reportSections = [] }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef(null);
+
+  const suggestions = reportSections
+    .slice(0, 4)
+    .map((s) => `Tell me more about: ${s.heading ?? s.title}`)
+    .filter(Boolean);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -38,10 +44,26 @@ export default function FollowUpChat({ sessionId }) {
     <div className="rounded-xl border border-violet-100 bg-white overflow-hidden">
       {/* Header */}
       <div className="px-4 py-3 border-b border-violet-100 bg-violet-50 flex items-center gap-2">
-        <span className="text-base">💬</span>
+        <Icon name="message" size={16} className="text-violet-600" />
         <h3 className="text-sm font-semibold text-violet-800">Ask follow-up questions</h3>
         <span className="text-xs text-violet-400 ml-auto">Answers grounded in report</span>
       </div>
+
+      {/* Suggested questions — shown only before first message */}
+      {messages.length === 0 && suggestions.length > 0 && (
+        <div className="px-4 pt-3 pb-1 flex flex-wrap gap-2">
+          {suggestions.map((s, i) => (
+            <button
+              key={i}
+              onClick={() => { setInput(s); }}
+              disabled={loading}
+              className="text-xs px-3 py-1.5 rounded-full border border-violet-200 bg-violet-50 text-violet-600 hover:bg-violet-100 hover:border-violet-400 transition disabled:opacity-40"
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Message list */}
       {messages.length > 0 && (
@@ -52,8 +74,8 @@ export default function FollowUpChat({ sessionId }) {
               className={`flex gap-2.5 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
             >
               {msg.role === "assistant" && (
-                <div className="h-6 w-6 rounded-full bg-violet-100 flex items-center justify-center text-xs shrink-0 mt-0.5">
-                  🔬
+                <div className="h-6 w-6 rounded-full bg-violet-100 flex items-center justify-center shrink-0 mt-0.5 text-violet-600">
+                  <Icon name="flask" size={13} />
                 </div>
               )}
               <div
@@ -81,8 +103,8 @@ export default function FollowUpChat({ sessionId }) {
 
           {loading && (
             <div className="flex gap-2.5 justify-start">
-              <div className="h-6 w-6 rounded-full bg-violet-100 flex items-center justify-center text-xs shrink-0 mt-0.5">
-                🔬
+              <div className="h-6 w-6 rounded-full bg-violet-100 flex items-center justify-center shrink-0 mt-0.5 text-violet-600">
+                <Icon name="flask" size={13} />
               </div>
               <div className="bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5">
                 <ThinkingDots />

@@ -1,5 +1,7 @@
+import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import CitationCard from "./CitationCard";
+import Icon from "./Icon";
 
 const CONFIDENCE_COLOR = {
   High: "text-green-600",
@@ -72,6 +74,35 @@ export default function ResearchReport({ report }) {
             ))}
           </div>
         </div>
+      )}
+
+      <FeedbackBar context={{ question: report.question, session_id: report.session_id }} />
+    </div>
+  );
+}
+
+function FeedbackBar({ context }) {
+  const [rating, setRating] = useState(null);
+
+  function submit(value) {
+    setRating(value);
+    const log = JSON.parse(localStorage.getItem("researcher_feedback") || "[]");
+    log.push({ ...context, rating: value, timestamp: new Date().toISOString() });
+    localStorage.setItem("researcher_feedback", JSON.stringify(log));
+  }
+
+  return (
+    <div className="flex items-center gap-3 pt-2 border-t border-gray-100">
+      <span className="text-xs text-gray-400">Was this report useful?</span>
+      {rating === null ? (
+        <>
+          <button onClick={() => submit("up")} className="text-gray-400 hover:text-green-600 hover:scale-110 transition" title="Yes" aria-label="Helpful"><Icon name="thumbsUp" size={18} /></button>
+          <button onClick={() => submit("down")} className="text-gray-400 hover:text-red-600 hover:scale-110 transition" title="No" aria-label="Not helpful"><Icon name="thumbsDown" size={18} /></button>
+        </>
+      ) : (
+        <span className="text-xs text-violet-600 font-medium">
+          {rating === "up" ? "Thanks!" : "Thanks — we'll improve."}
+        </span>
       )}
     </div>
   );

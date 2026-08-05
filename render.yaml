@@ -13,6 +13,11 @@ services:
         value: gpt-4o-mini
       - key: TAVILY_API_KEY
         sync: false
+      # Managed Postgres connection string (e.g. Neon). Without it the app
+      # falls back to SQLite, which is wiped whenever the free instance
+      # restarts -- that is why /api/history returns an empty list.
+      - key: DATABASE_URL
+        sync: false
       - key: CORS_ORIGINS
         fromService:
           type: web

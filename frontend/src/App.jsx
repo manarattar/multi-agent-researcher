@@ -5,6 +5,7 @@ import AgentTimeline from "./components/AgentTimeline";
 import ResearchReport from "./components/ResearchReport";
 import HistoryPanel from "./components/HistoryPanel";
 import FollowUpChat from "./components/FollowUpChat";
+import Icon from "./components/Icon";
 
 // phase: 'idle' | 'researching' | 'complete' | 'error'
 export default function App() {
@@ -93,7 +94,7 @@ export default function App() {
         <div className="px-4 py-4 border-b border-gray-100 flex items-center justify-between">
           <div>
             <h1 className="text-base font-bold text-violet-700 tracking-tight">
-              🔬 Research Agent
+              <Icon name="flask" size={16} className="inline-block -mt-0.5 mr-1" />Research Agent
             </h1>
             <p className="text-xs text-gray-400 mt-0.5">5-agent AI pipeline</p>
           </div>
@@ -182,7 +183,7 @@ export default function App() {
 
           {/* Idle placeholder */}
           {phase === "idle" && (
-            <IdlePlaceholder />
+            <IdlePlaceholder onSelect={handleResearch} />
           )}
 
           {/* Report */}
@@ -192,7 +193,7 @@ export default function App() {
 
           {/* Follow-up Q&A */}
           {phase === "complete" && activeSessionId && (
-            <FollowUpChat sessionId={activeSessionId} />
+            <FollowUpChat sessionId={activeSessionId} reportSections={report?.sections ?? []} />
           )}
         </main>
       </div>
@@ -200,7 +201,7 @@ export default function App() {
   );
 }
 
-function IdlePlaceholder() {
+function IdlePlaceholder({ onSelect }) {
   const examples = [
     "What are the latest breakthroughs in mRNA vaccine technology?",
     "How does quantum entanglement work and what are its practical applications?",
@@ -209,19 +210,21 @@ function IdlePlaceholder() {
   ];
   return (
     <div className="mt-4 text-center">
-      <div className="text-4xl mb-3">🔬</div>
+      <Icon name="flask" size={40} className="mx-auto mb-3 text-violet-400" />
       <h2 className="text-lg font-semibold text-gray-700 mb-1">Multi-Agent Research Assistant</h2>
-      <p className="text-sm text-gray-400 mb-6 max-w-md mx-auto">
+      <p className="text-sm text-gray-400 mb-2 max-w-md mx-auto">
         Ask any question and watch 5 specialized AI agents collaborate — searching the web, extracting claims, verifying facts, and synthesizing a report in real time.
       </p>
+      <p className="text-xs text-violet-500 mb-5">Click an example to try it instantly →</p>
       <div className="flex flex-col gap-2 max-w-lg mx-auto">
         {examples.map((ex, i) => (
-          <div
+          <button
             key={i}
-            className="rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-500 italic text-left cursor-default hover:border-violet-300 hover:text-violet-600 transition"
+            onClick={() => onSelect(ex)}
+            className="rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-500 italic text-left cursor-pointer hover:border-violet-400 hover:text-violet-600 hover:bg-violet-50 transition"
           >
             "{ex}"
-          </div>
+          </button>
         ))}
       </div>
     </div>

@@ -1,9 +1,11 @@
+import Icon from "./Icon";
+
 const AGENTS = [
-  { key: "coordinator", label: "Coordinator", icon: "🗂️", desc: "Plans research strategy" },
-  { key: "search", label: "Search", icon: "🔍", desc: "Fetches web sources" },
-  { key: "analysis", label: "Analysis", icon: "🧠", desc: "Extracts key claims" },
-  { key: "factcheck", label: "Fact-Check", icon: "✅", desc: "Verifies claims" },
-  { key: "synthesis", label: "Synthesis", icon: "✍️", desc: "Writes the report" },
+  { key: "coordinator", label: "Coordinator", icon: "folder", desc: "Plans research strategy" },
+  { key: "search", label: "Search", icon: "search", desc: "Fetches web sources" },
+  { key: "analysis", label: "Analysis", icon: "cpu", desc: "Extracts key claims" },
+  { key: "factcheck", label: "Fact-Check", icon: "checkCircle", desc: "Verifies claims" },
+  { key: "synthesis", label: "Synthesis", icon: "pen", desc: "Writes the report" },
 ];
 
 const STATUS_STYLE = {
@@ -37,7 +39,7 @@ export default function AgentTimeline({ events }) {
                 {i < AGENTS.length - 1 && (
                   <div className="absolute -right-[9px] top-1/2 z-10 -translate-y-1/2 text-gray-300 text-xs">→</div>
                 )}
-                <div className="text-lg sm:text-xl mb-1">{agent.icon}</div>
+                <div className="mb-1 flex justify-center"><Icon name={agent.icon} size={22} /></div>
                 <div className="font-semibold text-xs">{agent.label}</div>
                 <div className="text-xs opacity-70 mt-0.5 hidden sm:block">{agent.desc}</div>
                 <StatusDot status={state.status} />
@@ -79,7 +81,7 @@ function StatusDot({ status }) {
 
 function EventRow({ event }) {
   const label = event.agent ?? event.type ?? "system";
-  const icon = AGENTS.find((a) => a.key === label)?.icon ?? "⚙️";
+  const iconName = AGENTS.find((a) => a.key === label)?.icon ?? "gear";
   const colorClass =
     event.status === "error"
       ? "text-red-500"
@@ -89,7 +91,7 @@ function EventRow({ event }) {
 
   return (
     <div className="flex items-start gap-2 text-xs">
-      <span className="shrink-0">{icon}</span>
+      <span className={`shrink-0 ${colorClass}`}><Icon name={iconName} size={14} /></span>
       <span className={`font-medium shrink-0 ${colorClass}`}>{label}</span>
       <span className="text-gray-600 break-all">{event.message}</span>
     </div>
