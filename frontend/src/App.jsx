@@ -6,6 +6,7 @@ import ResearchReport from "./components/ResearchReport";
 import HistoryPanel from "./components/HistoryPanel";
 import FollowUpChat from "./components/FollowUpChat";
 import Onboarding, { hasSeenTour } from "./components/Onboarding";
+import ThemeToggle from "./components/ThemeToggle.jsx";
 
 const LANDING_TOUR = "researcher.onboarded.v1";
 const REPORT_TOUR = "researcher.report-tour.v1";
@@ -215,6 +216,7 @@ export default function App() {
                 New
               </button>
             )}
+            <ThemeToggle />
             <button
               onClick={() => setTour(phase === "complete" ? "report" : "landing")}
               className="rounded-[4px] border border-rule px-3 py-1.5 text-[13px] font-semibold text-ink hover:border-ink-3"
