@@ -1,100 +1,75 @@
-import Icon from "./Icon";
-
 const AGENTS = [
-  { key: "coordinator", label: "Coordinator", icon: "folder", desc: "Plans research strategy" },
-  { key: "search", label: "Search", icon: "search", desc: "Fetches web sources" },
-  { key: "analysis", label: "Analysis", icon: "cpu", desc: "Extracts key claims" },
-  { key: "factcheck", label: "Fact-Check", icon: "checkCircle", desc: "Verifies claims" },
-  { key: "synthesis", label: "Synthesis", icon: "pen", desc: "Writes the report" },
+  { key: "coordinator", label: "Coordinator", desc: "Plans the research" },
+  { key: "search", label: "Search", desc: "Fetches web sources" },
+  { key: "analysis", label: "Analysis", desc: "Extracts the claims" },
+  { key: "factcheck", label: "Fact-check", desc: "Verifies each claim" },
+  { key: "synthesis", label: "Synthesis", desc: "Writes the report" },
 ];
 
-const STATUS_STYLE = {
-  pending: "border-gray-200 bg-gray-50 text-gray-400",
-  running: "border-violet-300 bg-violet-50 text-violet-700",
-  complete: "border-green-300 bg-green-50 text-green-700",
-  error: "border-red-300 bg-red-50 text-red-600",
+const STATE_LABEL = { pending: "waiting", running: "working", complete: "done", error: "failed" };
+const STATE_TONE = {
+  pending: "text-ink-3",
+  running: "text-accent",
+  complete: "text-ok",
+  error: "text-bad",
 };
 
 export default function AgentTimeline({ events }) {
   const agentState = buildAgentState(events);
 
   return (
-    <div className="space-y-3">
-      <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
-        Agent Pipeline
-      </h2>
+    <section className="space-y-3" data-tour="pipeline">
+      <h2 className="label">Five agents, in order</h2>
 
-      {/* Agent cards row — horizontal scroll on mobile */}
-      <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0 pb-1">
-        <div className="grid grid-cols-5 gap-2" style={{ minWidth: "360px" }}>
-          {AGENTS.map((agent, i) => {
-            const state = agentState[agent.key] ?? { status: "pending", messages: [] };
-            const style = STATUS_STYLE[state.status] ?? STATUS_STYLE.pending;
-            return (
-              <div
-                key={agent.key}
-                className={`relative rounded-xl border-2 p-2 sm:p-3 transition-all ${style}`}
+      <ol className="divide-y divide-rule overflow-hidden rounded-[6px] border border-rule bg-sheet">
+        {AGENTS.map((agent, i) => {
+          const status = agentState[agent.key]?.status ?? "pending";
+          return (
+            <li key={agent.key} className="grid grid-cols-[28px_1fr_auto] items-center gap-3 px-4 py-2.5">
+              <span
+                className={`num flex h-6 w-6 items-center justify-center rounded-full border text-[11px] ${
+                  status === "complete"
+                    ? "border-ok bg-ok text-sheet"
+                    : status === "running"
+                    ? "border-accent text-accent"
+                    : "border-rule text-ink-3"
+                }`}
               >
-                {/* connector line */}
-                {i < AGENTS.length - 1 && (
-                  <div className="absolute -right-[9px] top-1/2 z-10 -translate-y-1/2 text-gray-300 text-xs">→</div>
-                )}
-                <div className="mb-1 flex justify-center"><Icon name={agent.icon} size={22} /></div>
-                <div className="font-semibold text-xs">{agent.label}</div>
-                <div className="text-xs opacity-70 mt-0.5 hidden sm:block">{agent.desc}</div>
-                <StatusDot status={state.status} />
+                {status === "complete" ? "✓" : i + 1}
+              </span>
+              <div className="min-w-0">
+                <p className={`text-[14.5px] font-semibold ${status === "pending" ? "text-ink-3" : "text-ink"}`}>{agent.label}</p>
+                <p className="truncate text-[12.5px] text-ink-3">{agent.desc}</p>
               </div>
-            );
-          })}
-        </div>
-      </div>
+              <span className={`num flex items-center gap-1.5 text-[11.5px] ${STATE_TONE[status]}`}>
+                {status === "running" && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />}
+                {STATE_LABEL[status]}
+              </span>
+            </li>
+          );
+        })}
+      </ol>
 
-      {/* Event feed */}
-      <div className="max-h-64 overflow-y-auto rounded-xl border border-gray-100 bg-gray-50 p-3 space-y-1.5">
+      <div className="max-h-56 space-y-1.5 overflow-y-auto rounded-[6px] border border-rule bg-rail p-3">
         {events.length === 0 ? (
-          <p className="text-xs text-gray-400 italic">Waiting for events…</p>
+          <p className="text-[12.5px] italic text-ink-3">Waiting for the first event…</p>
         ) : (
           events.map((ev, i) => <EventRow key={i} event={ev} />)
         )}
       </div>
-    </div>
+    </section>
   );
-}
-
-function StatusDot({ status }) {
-  if (status === "running") {
-    return (
-      <span className="absolute top-2 right-2 flex h-2 w-2">
-        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75" />
-        <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-500" />
-      </span>
-    );
-  }
-  if (status === "complete") {
-    return <span className="absolute top-2 right-2 text-xs text-green-500">✓</span>;
-  }
-  if (status === "error") {
-    return <span className="absolute top-2 right-2 text-xs text-red-500">✗</span>;
-  }
-  return null;
 }
 
 function EventRow({ event }) {
   const label = event.agent ?? event.type ?? "system";
-  const iconName = AGENTS.find((a) => a.key === label)?.icon ?? "gear";
-  const colorClass =
-    event.status === "error"
-      ? "text-red-500"
-      : event.status === "complete"
-      ? "text-green-600"
-      : "text-violet-600";
-
+  const tone =
+    event.status === "error" ? "text-bad" : event.status === "complete" ? "text-ok" : "text-accent";
   return (
-    <div className="flex items-start gap-2 text-xs">
-      <span className={`shrink-0 ${colorClass}`}><Icon name={iconName} size={14} /></span>
-      <span className={`font-medium shrink-0 ${colorClass}`}>{label}</span>
-      <span className="text-gray-600 break-all">{event.message}</span>
-    </div>
+    <p className="num text-[12px] leading-relaxed text-ink-2">
+      <span className={`mr-2 font-medium ${tone}`}>{label}</span>
+      <span className="break-words">{event.message}</span>
+    </p>
   );
 }
 

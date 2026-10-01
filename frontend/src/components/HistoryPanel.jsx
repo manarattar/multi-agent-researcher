@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { getHistory, deleteSession } from "../api";
 
-const RISK_COLOR = {
-  complete: "bg-green-100 text-green-700",
-  processing: "bg-yellow-100 text-yellow-700",
-  failed: "bg-red-100 text-red-600",
+const STATUS_TONE = {
+  complete: "text-ok",
+  processing: "text-warn",
+  failed: "text-bad",
 };
 
 export default function HistoryPanel({ onSelect, activeId }) {
@@ -16,7 +16,7 @@ export default function HistoryPanel({ onSelect, activeId }) {
       const data = await getHistory();
       setSessions(data);
     } catch {
-      // silently ignore
+      // history is optional: the app works without it
     } finally {
       setLoading(false);
     }
@@ -32,71 +32,50 @@ export default function HistoryPanel({ onSelect, activeId }) {
     return () => { delete window._refreshHistory; };
   }, []);
 
-  async function handleDelete(e, id) {
-    e.stopPropagation();
+  async function handleDelete(id) {
     await deleteSession(id);
     setSessions((prev) => prev.filter((s) => s.session_id !== id));
   }
 
   return (
     <aside className="flex h-full flex-col">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-        <h2 className="text-sm font-semibold text-gray-700">History</h2>
-        <button
-          onClick={load}
-          title="Refresh"
-          className="text-gray-400 hover:text-violet-600 text-xs"
-        >
+      <div className="flex items-center justify-between border-b border-rule px-4 py-3">
+        <h2 className="label">Past reports</h2>
+        <button onClick={load} title="Refresh" aria-label="Refresh history" className="text-[14px] text-ink-3 hover:text-accent">
           ↻
         </button>
       </div>
 
       <div className="flex-1 overflow-y-auto">
         {loading ? (
-          <p className="px-4 py-6 text-xs text-gray-400 text-center">Loading…</p>
+          <p className="px-4 py-6 text-center text-[13px] text-ink-3">Loading…</p>
         ) : sessions.length === 0 ? (
-          <p className="px-4 py-6 text-xs text-gray-400 text-center italic">
-            No past sessions yet
-          </p>
+          <p className="px-4 py-6 text-center text-[13px] italic text-ink-3">Finished reports are kept here.</p>
         ) : (
-          <ul className="divide-y divide-gray-50">
-            {sessions.map((s) => (
-              <li
-                key={s.session_id}
-                onClick={() => onSelect(s)}
-                className={`group cursor-pointer px-4 py-3 hover:bg-gray-50 transition ${
-                  activeId === s.session_id ? "bg-violet-50 border-l-2 border-violet-400" : ""
-                }`}
-              >
-                <div className="flex items-start justify-between gap-1">
-                  <p className="text-xs text-gray-700 line-clamp-2 flex-1">{s.question}</p>
+          <ul className="divide-y divide-rule">
+            {sessions.map((s) => {
+              const active = activeId === s.session_id;
+              return (
+                <li key={s.session_id} className={`group flex items-start border-l-2 ${active ? "border-accent bg-accent-soft" : "border-transparent hover:bg-sheet"}`}>
+                  <button onClick={() => onSelect(s)} className="min-w-0 flex-1 px-4 py-3 text-left">
+                    <span className="line-clamp-2 block font-serif text-[15px] leading-snug text-ink">{s.question}</span>
+                    <span className="num mt-1.5 flex items-center gap-2 text-[10.5px] text-ink-3">
+                      <span className={STATUS_TONE[s.status]}>{s.status}</span>
+                      {s.overall_confidence && <span>{s.overall_confidence} conf.</span>}
+                      <span className="ml-auto">{formatDate(s.created_at)}</span>
+                    </span>
+                  </button>
                   <button
-                    onClick={(e) => handleDelete(e, s.session_id)}
-                    className="hidden group-hover:block shrink-0 text-gray-300 hover:text-red-400 text-xs ml-1"
+                    onClick={() => handleDelete(s.session_id)}
+                    aria-label="Delete this report"
                     title="Delete"
+                    className="shrink-0 px-3 py-3 text-[13px] text-ink-3 hover:text-bad md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100"
                   >
                     ✕
                   </button>
-                </div>
-                <div className="mt-1 flex items-center gap-1.5">
-                  <span
-                    className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
-                      RISK_COLOR[s.status] ?? "bg-gray-100 text-gray-500"
-                    }`}
-                  >
-                    {s.status}
-                  </span>
-                  {s.overall_confidence && (
-                    <span className="text-[10px] text-gray-400">
-                      {s.overall_confidence} conf.
-                    </span>
-                  )}
-                  <span className="text-[10px] text-gray-300 ml-auto">
-                    {formatDate(s.created_at)}
-                  </span>
-                </div>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>
@@ -108,8 +87,7 @@ function formatDate(iso) {
   if (!iso) return "";
   const d = new Date(iso);
   const now = new Date();
-  const diffMs = now - d;
-  const diffMins = Math.floor(diffMs / 60000);
+  const diffMins = Math.floor((now - d) / 60000);
   if (diffMins < 1) return "just now";
   if (diffMins < 60) return `${diffMins}m ago`;
   const diffHrs = Math.floor(diffMins / 60);

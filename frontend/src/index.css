@@ -1,2 +1,217 @@
 @import "tailwindcss";
-@plugin "@tailwindcss/typography";
+
+/*
+ * "Footnoted report": the answer is set like a paper. Serif body on a white
+ * sheet, ink-blue accents, and every claim carries a numbered footnote whose
+ * source is shown in the margin beside it.
+ */
+:root {
+  --page: #eef0f6;
+  --sheet: #ffffff;
+  --rail: #f7f8fb;
+  --ink: #141b2d;
+  --ink-2: #444d63;
+  --ink-3: #6f788e;
+  --rule: #d9dde8;
+  --accent: #1d3fa6;
+  --accent-soft: #e6ebfa;
+  --ok: #2a6b45;
+  --ok-soft: #e3f0e8;
+  --warn: #8a5a00;
+  --warn-soft: #fbf0d6;
+  --bad: #b3261e;
+  --bad-soft: #fbeae8;
+  --scrim: rgba(14, 20, 36, 0.58);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page: #0d121c;
+    --sheet: #151c2a;
+    --rail: #111827;
+    --ink: #e9edf6;
+    --ink-2: #b0b9cc;
+    --ink-3: #8089a0;
+    --rule: #283246;
+    --accent: #8ea6f2;
+    --accent-soft: #1c2542;
+    --ok: #76c595;
+    --ok-soft: #162b1f;
+    --warn: #e5a94a;
+    --warn-soft: #33270e;
+    --bad: #f08a80;
+    --bad-soft: #36201f;
+    --scrim: rgba(0, 0, 0, 0.66);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --page: #0d121c;
+  --sheet: #151c2a;
+  --rail: #111827;
+  --ink: #e9edf6;
+  --ink-2: #b0b9cc;
+  --ink-3: #8089a0;
+  --rule: #283246;
+  --accent: #8ea6f2;
+  --accent-soft: #1c2542;
+  --ok: #76c595;
+  --ok-soft: #162b1f;
+  --warn: #e5a94a;
+  --warn-soft: #33270e;
+  --bad: #f08a80;
+  --bad-soft: #36201f;
+  --scrim: rgba(0, 0, 0, 0.66);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-page: var(--page);
+  --color-sheet: var(--sheet);
+  --color-rail: var(--rail);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-rule: var(--rule);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-bad: var(--bad);
+  --color-bad-soft: var(--bad-soft);
+  --font-sans: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-serif: "Newsreader", Georgia, "Times New Roman", serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 { text-wrap: balance; }
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+/* The report text itself */
+.paper {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  line-height: 1.65;
+  color: var(--ink);
+  max-width: 62ch;
+}
+.paper p { margin: 0 0 0.85em; }
+.paper p:last-child { margin-bottom: 0; }
+.paper ul, .paper ol { margin: 0 0 0.85em; padding-left: 1.3em; }
+.paper ul { list-style: disc; }
+.paper ol { list-style: decimal; }
+.paper li { margin-bottom: 0.35em; }
+.paper strong { font-weight: 600; }
+.paper a { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+.paper h1, .paper h2, .paper h3, .paper h4 { font-family: var(--font-sans); font-size: 15px; font-weight: 700; margin: 1em 0 0.4em; }
+.paper code { font-family: var(--font-mono); font-size: 0.85em; background: var(--accent-soft); padding: 1px 4px; border-radius: 3px; }
+.paper blockquote { margin: 0 0 0.85em; padding-left: 1em; border-left: 3px solid var(--rule); color: var(--ink-2); }
+.paper.small { font-size: 15.5px; line-height: 1.6; }
+
+/* Footnote marker in the running text */
+.fn {
+  display: inline-block;
+  margin: 0 1px;
+  padding: 0 3px;
+  min-width: 1.15em;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.62em;
+  font-weight: 500;
+  line-height: 1.4;
+  vertical-align: baseline;
+  position: relative;
+  top: -0.55em;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 3px;
+  cursor: help;
+}
+
+:root {
+  --tour-surface: var(--sheet);
+  --tour-ink: var(--ink);
+  --tour-body: var(--ink-2);
+  --tour-muted: var(--ink-3);
+  --tour-rule: var(--rule);
+  --tour-scrim: var(--scrim);
+  --tour-accent: var(--accent);
+  --tour-on-accent: #ffffff;
+  --tour-radius: 6px;
+  --tour-heading-font: var(--font-serif);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --tour-on-accent: #0d121c; }
+}
+:root[data-theme="dark"] { --tour-on-accent: #0d121c; }
+
+.crash {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: var(--page);
+  font-family: var(--font-sans);
+}
+.crash-card {
+  width: 100%;
+  max-width: 440px;
+  background: var(--sheet);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 24px;
+  color: var(--ink);
+}
+.crash-card h1 { margin: 0; font-size: 24px; font-family: var(--font-serif); font-weight: 600; }
+.crash-card p { margin: 8px 0 0; font-size: 14px; line-height: 1.55; color: var(--ink-2); }
+.crash-card .crash-detail {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: var(--page);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-3);
+  overflow-wrap: anywhere;
+}
+.crash-card button {
+  margin-top: 16px;
+  padding: 8px 16px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--accent);
+  color: var(--tour-on-accent);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}

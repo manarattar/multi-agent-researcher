@@ -1,11 +1,75 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { streamResearch, getSession } from "./api";
 import QueryInput from "./components/QueryInput";
 import AgentTimeline from "./components/AgentTimeline";
 import ResearchReport from "./components/ResearchReport";
 import HistoryPanel from "./components/HistoryPanel";
 import FollowUpChat from "./components/FollowUpChat";
-import Icon from "./components/Icon";
+import Onboarding, { hasSeenTour } from "./components/Onboarding";
+
+const LANDING_TOUR = "researcher.onboarded.v1";
+const REPORT_TOUR = "researcher.report-tour.v1";
+
+const LANDING_STEPS = [
+  {
+    target: null,
+    title: "A research report with its sources attached",
+    body: (
+      <>
+        <p>
+          Ask a question and five agents work through it in order: plan, search the web, extract
+          claims, fact-check them, and write the report.
+        </p>
+        <p style={{ marginTop: 8 }}>Every claim in the report carries a numbered footnote you can trace to its source.</p>
+      </>
+    ),
+  },
+  {
+    target: "query",
+    title: "Ask a question",
+    body: "Any research question works best when it is specific. A run takes a minute or two and you can watch each agent as it works.",
+  },
+  {
+    target: "examples",
+    title: "Or start from an example",
+    body: "Click one and it runs straight away, so you can see a full report without typing anything.",
+  },
+  {
+    target: "history",
+    title: "Your reports are kept",
+    body: "Finished reports are saved here. Open one to read it again and keep asking follow-up questions.",
+  },
+];
+
+const REPORT_STEPS = [
+  {
+    target: "summary",
+    title: "The short version first",
+    body: "The title and summary come first, with how confident the agents are and how many sources they used.",
+  },
+  {
+    target: "margin",
+    title: "Footnotes, with the source beside them",
+    body: "Each small number in the text points to a source. The sources a section relies on are listed next to it, so you can check a claim without scrolling to the end.",
+  },
+  {
+    target: "sources",
+    title: "Every source, in full",
+    body: "The reference list shows each page with how much the fact-checking agent trusted it.",
+  },
+  {
+    target: "followup",
+    title: "Keep asking",
+    body: "Follow-up questions are answered from this report, so the answers stay tied to the same sources.",
+  },
+];
+
+const EXAMPLES = [
+  "What are the latest breakthroughs in mRNA vaccine technology?",
+  "How does quantum entanglement work and what are its practical applications?",
+  "What are the economic impacts of remote work on urban real estate?",
+  "Compare the environmental footprint of electric vs hydrogen fuel cell vehicles",
+];
 
 // phase: 'idle' | 'researching' | 'complete' | 'error'
 export default function App() {
@@ -16,6 +80,7 @@ export default function App() {
   const [errorMsg, setErrorMsg] = useState("");
   const [activeSessionId, setActiveSessionId] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [tour, setTour] = useState(() => (hasSeenTour(LANDING_TOUR) ? null : "landing"));
   const abortRef = useRef(false);
 
   async function handleResearch(question) {
@@ -38,7 +103,6 @@ export default function App() {
         setReport(finalReport);
         setActiveSessionId(finalReport.session_id);
         setPhase("complete");
-        // refresh history sidebar
         window._refreshHistory?.();
       },
       (msg) => {
@@ -60,7 +124,8 @@ export default function App() {
       setEvents([]);
       setErrorMsg("");
     } catch {
-      alert("Could not load session.");
+      setErrorMsg("Could not load that report.");
+      setPhase("error");
     }
   }
 
@@ -74,168 +139,166 @@ export default function App() {
     setActiveSessionId(null);
   }
 
+  // on phones the history list is a drawer: open it while the tour points at it
+  const onTourStep = useCallback((target) => {
+    setSidebarOpen(target === "history" && window.innerWidth < 768);
+  }, []);
+
+  const closeTour = useCallback(() => {
+    setTour(null);
+    setSidebarOpen(false);
+  }, []);
+
+  // the first finished report gets a short guide to how to read it
+  useEffect(() => {
+    if (phase === "complete" && !tour && !hasSeenTour(REPORT_TOUR)) setTour("report");
+  }, [phase, tour]);
+
+  const status =
+    phase === "idle" ? "Ask a research question"
+    : phase === "researching" ? "Agents working…"
+    : phase === "complete" ? "Report ready"
+    : "Something went wrong";
+  const statusTone =
+    phase === "researching" ? "text-accent" : phase === "complete" ? "text-ok" : phase === "error" ? "text-bad" : "text-ink-3";
+
   return (
-    <div className="flex h-screen bg-gray-50 text-gray-800 font-sans overflow-hidden">
-      {/* Mobile backdrop */}
+    <div className="flex h-dvh overflow-hidden bg-page font-sans text-ink">
       {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-30 bg-black/40 md:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
+        <div className="fixed inset-0 z-30 bg-[var(--scrim)] md:hidden" onClick={() => setSidebarOpen(false)} />
       )}
 
-      {/* Sidebar — drawer on mobile, fixed column on md+ */}
-      <div className={`
-        fixed inset-y-0 left-0 z-40 w-64 shrink-0 border-r border-gray-200 bg-white flex flex-col
-        transition-transform duration-200 ease-in-out
-        ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
-        md:relative md:translate-x-0
-      `}>
-        <div className="px-4 py-4 border-b border-gray-100 flex items-center justify-between">
+      <div
+        data-tour="history"
+        className={`fixed inset-y-0 left-0 z-40 flex w-72 max-w-[85vw] shrink-0 flex-col border-r border-rule bg-rail md:relative md:w-64 md:max-w-none md:translate-x-0 ${
+          tour ? "" : "transition-transform duration-200 ease-in-out"
+        } ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
+      >
+        <div className="flex items-center justify-between border-b border-rule px-4 py-4">
           <div>
-            <h1 className="text-base font-bold text-violet-700 tracking-tight">
-              <Icon name="flask" size={16} className="inline-block -mt-0.5 mr-1" />Research Agent
-            </h1>
-            <p className="text-xs text-gray-400 mt-0.5">5-agent AI pipeline</p>
+            <h1 className="font-serif text-[20px] font-semibold leading-none text-ink">Research Agent</h1>
+            <p className="mt-1 text-[12px] text-ink-3">Reports with footnotes</p>
           </div>
           <button
-            className="md:hidden text-gray-400 hover:text-gray-600 p-1"
+            className="rounded-[4px] p-1.5 text-ink-3 hover:text-ink md:hidden"
             onClick={() => setSidebarOpen(false)}
+            aria-label="Close history"
           >
             ✕
           </button>
         </div>
-        <div className="flex-1 overflow-hidden">
+        <div className="min-h-0 flex-1">
           <HistoryPanel onSelect={handleSelectHistory} activeId={activeSessionId} />
         </div>
       </div>
 
-      {/* Main */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Top bar */}
-        <header className="px-3 sm:px-6 py-3 border-b border-gray-200 bg-white flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            {/* Hamburger — mobile only */}
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="flex items-center justify-between gap-2 border-b border-rule bg-sheet px-3 py-2.5 sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
             <button
-              className="md:hidden shrink-0 p-1 rounded text-gray-500 hover:text-violet-600 transition"
-              onClick={() => setSidebarOpen(v => !v)}
-              aria-label="Toggle history"
+              className="shrink-0 rounded-[4px] border border-rule px-3 py-1.5 text-[13px] font-semibold text-ink md:hidden"
+              onClick={() => setSidebarOpen((v) => !v)}
             >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
+              History
             </button>
-            <div className="text-sm text-gray-500 truncate">
-              {phase === "idle" && "Ask any research question"}
-              {phase === "researching" && (
-                <span className="text-violet-600 font-medium flex items-center gap-1.5">
-                  <Spinner /> Agents working…
-                </span>
-              )}
-              {phase === "complete" && (
-                <span className="text-green-600 font-medium">Research complete</span>
-              )}
-              {phase === "error" && (
-                <span className="text-red-500 font-medium">Error occurred</span>
-              )}
-            </div>
+            <p className={`num truncate text-[12px] ${statusTone}`}>
+              {phase === "researching" && <span className="mr-2 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-accent align-middle" />}
+              {status}
+            </p>
           </div>
-          {phase !== "idle" && (
+          <div className="flex shrink-0 items-center gap-2">
+            {phase !== "idle" && (
+              <button
+                onClick={handleNewResearch}
+                className="rounded-[4px] border border-rule px-3 py-1.5 text-[13px] font-semibold text-ink hover:border-ink-3"
+              >
+                New
+              </button>
+            )}
             <button
-              onClick={handleNewResearch}
-              className="shrink-0 text-xs text-gray-400 hover:text-violet-600 transition"
+              onClick={() => setTour(phase === "complete" ? "report" : "landing")}
+              className="rounded-[4px] border border-rule px-3 py-1.5 text-[13px] font-semibold text-ink hover:border-ink-3"
             >
-              + New
+              How it works
             </button>
-          )}
+          </div>
         </header>
 
-        {/* Content */}
-        <main className="flex-1 overflow-y-auto px-3 sm:px-6 py-4 sm:py-5 space-y-5">
-          {/* Query input — always show when idle or researching */}
-          {(phase === "idle" || phase === "researching") && (
-            <QueryInput
-              onSubmit={handleResearch}
-              disabled={phase === "researching"}
-            />
-          )}
+        <main className="flex-1 overflow-y-auto">
+          <div className="mx-auto w-full max-w-[1000px] space-y-6 px-4 py-6 sm:px-6 sm:py-8">
+            {phase === "idle" && <Hero onSelect={handleResearch} />}
 
-          {/* Current question banner (complete/error) */}
-          {(phase === "complete" || phase === "error") && currentQuestion && (
-            <div className="flex items-center gap-3">
-              <div className="flex-1 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700">
-                {currentQuestion}
+            {(phase === "idle" || phase === "researching") && (
+              <QueryInput onSubmit={handleResearch} disabled={phase === "researching"} />
+            )}
+
+            {phase === "idle" && <Examples onSelect={handleResearch} />}
+
+            {(phase === "researching" || phase === "complete" || phase === "error") && currentQuestion && (
+              <div>
+                <p className="label mb-1.5">Question</p>
+                <p className="font-serif text-[22px] leading-snug text-ink sm:text-[26px]">{currentQuestion}</p>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Error */}
-          {phase === "error" && (
-            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              <strong>Error:</strong> {errorMsg}
-            </div>
-          )}
+            {phase === "error" && (
+              <div role="alert" className="rounded-[6px] border border-bad bg-bad-soft px-4 py-3 text-[14px] text-bad">
+                <strong>Error:</strong> {errorMsg}
+              </div>
+            )}
 
-          {/* Agent timeline (during research) */}
-          {phase === "researching" && events.length > 0 && (
-            <AgentTimeline events={events} />
-          )}
+            {phase === "researching" && events.length > 0 && <AgentTimeline events={events} />}
 
-          {/* Idle placeholder */}
-          {phase === "idle" && (
-            <IdlePlaceholder onSelect={handleResearch} />
-          )}
+            {phase === "complete" && report && <ResearchReport report={report} question={currentQuestion} />}
 
-          {/* Report */}
-          {phase === "complete" && report && (
-            <ResearchReport report={report} question={currentQuestion} />
-          )}
-
-          {/* Follow-up Q&A */}
-          {phase === "complete" && activeSessionId && (
-            <FollowUpChat sessionId={activeSessionId} reportSections={report?.sections ?? []} />
-          )}
+            {phase === "complete" && activeSessionId && (
+              <FollowUpChat sessionId={activeSessionId} reportSections={report?.sections ?? []} />
+            )}
+          </div>
         </main>
       </div>
+
+      {tour === "landing" && (
+        <Onboarding steps={LANDING_STEPS} storageKey={LANDING_TOUR} onClose={closeTour} onStep={onTourStep} />
+      )}
+      {tour === "report" && (
+        <Onboarding steps={REPORT_STEPS} storageKey={REPORT_TOUR} onClose={closeTour} onStep={onTourStep} />
+      )}
     </div>
   );
 }
 
-function IdlePlaceholder({ onSelect }) {
-  const examples = [
-    "What are the latest breakthroughs in mRNA vaccine technology?",
-    "How does quantum entanglement work and what are its practical applications?",
-    "What are the economic impacts of remote work on urban real estate?",
-    "Compare the environmental footprint of electric vs hydrogen fuel cell vehicles",
-  ];
+function Hero() {
   return (
-    <div className="mt-4 text-center">
-      <Icon name="flask" size={40} className="mx-auto mb-3 text-violet-400" />
-      <h2 className="text-lg font-semibold text-gray-700 mb-1">Multi-Agent Research Assistant</h2>
-      <p className="text-sm text-gray-400 mb-2 max-w-md mx-auto">
-        Ask any question and watch 5 specialized AI agents collaborate — searching the web, extracting claims, verifying facts, and synthesizing a report in real time.
+    <div className="max-w-[40rem]">
+      <h2 className="font-serif text-[34px] font-semibold leading-[1.15] text-ink sm:text-[44px]">
+        Ask a question. Get a report with its footnotes.
+      </h2>
+      <p className="mt-3 max-w-[54ch] text-[16px] leading-relaxed text-ink-2">
+        Five agents search the web, pull out the claims, check them against each other and write it up,
+        with every claim tied to a numbered source.
       </p>
-      <p className="text-xs text-violet-500 mb-5">Click an example to try it instantly →</p>
-      <div className="flex flex-col gap-2 max-w-lg mx-auto">
-        {examples.map((ex, i) => (
-          <button
-            key={i}
-            onClick={() => onSelect(ex)}
-            className="rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-500 italic text-left cursor-pointer hover:border-violet-400 hover:text-violet-600 hover:bg-violet-50 transition"
-          >
-            "{ex}"
-          </button>
-        ))}
-      </div>
     </div>
   );
 }
 
-function Spinner() {
+function Examples({ onSelect }) {
   return (
-    <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
-      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-    </svg>
+    <section data-tour="examples">
+      <p className="label mb-2">Or try one of these</p>
+      <ol className="divide-y divide-rule overflow-hidden rounded-[6px] border border-rule bg-sheet">
+        {EXAMPLES.map((ex, i) => (
+          <li key={i}>
+            <button
+              onClick={() => onSelect(ex)}
+              className="grid w-full grid-cols-[28px_1fr] gap-x-2 px-4 py-3 text-left hover:bg-accent-soft"
+            >
+              <span className="num pt-1 text-[12px] text-ink-3">{i + 1}</span>
+              <span className="font-serif text-[18px] leading-snug text-ink">{ex}</span>
+            </button>
+          </li>
+        ))}
+      </ol>
+    </section>
   );
 }

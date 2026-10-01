@@ -1,37 +1,31 @@
-const CONFIDENCE_STYLE = {
-  High: "bg-green-100 text-green-700",
-  Medium: "bg-yellow-100 text-yellow-700",
-  Low: "bg-red-100 text-red-600",
+const CONFIDENCE_TONE = {
+  High: "text-ok",
+  Medium: "text-warn",
+  Low: "text-bad",
 };
 
+/** One entry in the reference list at the end of the report. */
 export default function CitationCard({ citation }) {
   const { index, url, title, excerpt, confidence, domain } = citation;
-  const confStyle = CONFIDENCE_STYLE[confidence] ?? "bg-gray-100 text-gray-600";
-
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-3 text-sm shadow-sm">
-      <div className="flex items-start justify-between gap-2 mb-1.5">
-        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-100 text-xs font-bold text-violet-700">
-          {index}
-        </span>
-        <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${confStyle}`}>
-          {confidence}
-        </span>
+    <li id={`ref-${index}`} className="grid grid-cols-[28px_1fr] gap-x-3 py-3 first:pt-0">
+      <span className="num mt-0.5 h-fit text-[12px] font-medium text-accent">[{index}]</span>
+      <div className="min-w-0">
+        <a
+          href={url}
+          target="_blank"
+          rel="noreferrer"
+          className="line-clamp-2 break-words text-[15px] font-semibold leading-snug text-accent hover:underline"
+        >
+          {title || url}
+        </a>
+        <p className="num mt-0.5 text-[11.5px] text-ink-3">
+          {domain}
+          {domain && confidence && " · "}
+          {confidence && <span className={CONFIDENCE_TONE[confidence]}>{confidence} confidence</span>}
+        </p>
+        {excerpt && <p className="mt-1 line-clamp-2 text-[13.5px] leading-relaxed text-ink-2">{excerpt}</p>}
       </div>
-      <a
-        href={url}
-        target="_blank"
-        rel="noreferrer"
-        className="block font-medium text-violet-700 hover:underline line-clamp-2"
-      >
-        {title || url}
-      </a>
-      {domain && (
-        <p className="text-xs text-gray-400 mt-0.5">{domain}</p>
-      )}
-      {excerpt && (
-        <p className="mt-1 text-gray-500 text-xs line-clamp-2">{excerpt}</p>
-      )}
-    </div>
+    </li>
   );
 }

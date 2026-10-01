@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import { askFollowUp } from "../api";
-import Icon from "./Icon";
 
 export default function FollowUpChat({ sessionId, reportSections = [] }) {
   const [messages, setMessages] = useState([]);
@@ -15,7 +14,7 @@ export default function FollowUpChat({ sessionId, reportSections = [] }) {
     .filter(Boolean);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messages.length > 0 || loading) bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [messages, loading]);
 
   async function handleSubmit(e) {
@@ -41,23 +40,20 @@ export default function FollowUpChat({ sessionId, reportSections = [] }) {
   }
 
   return (
-    <div className="rounded-xl border border-violet-100 bg-white overflow-hidden">
-      {/* Header */}
-      <div className="px-4 py-3 border-b border-violet-100 bg-violet-50 flex items-center gap-2">
-        <Icon name="message" size={16} className="text-violet-600" />
-        <h3 className="text-sm font-semibold text-violet-800">Ask follow-up questions</h3>
-        <span className="text-xs text-violet-400 ml-auto">Answers grounded in report</span>
+    <section className="overflow-hidden rounded-[6px] border border-rule bg-sheet" data-tour="followup">
+      <div className="flex flex-wrap items-baseline gap-x-3 border-b border-rule px-5 py-3">
+        <h3 className="font-serif text-[18px] font-semibold text-ink">Ask about this report</h3>
+        <span className="text-[12.5px] text-ink-3">Answers come from the report, not the open web.</span>
       </div>
 
-      {/* Suggested questions — shown only before first message */}
       {messages.length === 0 && suggestions.length > 0 && (
-        <div className="px-4 pt-3 pb-1 flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 px-5 pt-4">
           {suggestions.map((s, i) => (
             <button
               key={i}
-              onClick={() => { setInput(s); }}
+              onClick={() => setInput(s)}
               disabled={loading}
-              className="text-xs px-3 py-1.5 rounded-full border border-violet-200 bg-violet-50 text-violet-600 hover:bg-violet-100 hover:border-violet-400 transition disabled:opacity-40"
+              className="rounded-[4px] border border-rule px-3 py-1.5 text-left text-[13px] text-ink-2 hover:border-accent hover:text-accent disabled:opacity-40"
             >
               {s}
             </button>
@@ -65,91 +61,44 @@ export default function FollowUpChat({ sessionId, reportSections = [] }) {
         </div>
       )}
 
-      {/* Message list */}
       {messages.length > 0 && (
-        <div className="px-4 py-3 space-y-3 max-h-80 overflow-y-auto">
-          {messages.map((msg, i) => (
-            <div
-              key={i}
-              className={`flex gap-2.5 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-            >
-              {msg.role === "assistant" && (
-                <div className="h-6 w-6 rounded-full bg-violet-100 flex items-center justify-center shrink-0 mt-0.5 text-violet-600">
-                  <Icon name="flask" size={13} />
+        <div className="max-h-96 space-y-4 overflow-y-auto px-5 py-4">
+          {messages.map((msg, i) =>
+            msg.role === "user" ? (
+              <p key={i} className="ml-auto max-w-[85%] rounded-[6px] bg-accent px-3.5 py-2.5 text-[14.5px] leading-relaxed text-[var(--tour-on-accent)]">
+                {msg.text}
+              </p>
+            ) : (
+              <div key={i} className="max-w-[92%] border-l-2 border-accent pl-3.5">
+                <div className="paper small">
+                  <ReactMarkdown>{msg.text}</ReactMarkdown>
                 </div>
-              )}
-              <div
-                className={`max-w-[85%] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed ${
-                  msg.role === "user"
-                    ? "bg-violet-600 text-white"
-                    : "bg-gray-50 border border-gray-200 text-gray-800"
-                }`}
-              >
-                {msg.role === "assistant" ? (
-                  <div className="prose prose-sm max-w-none prose-p:my-1 prose-li:my-0.5 prose-headings:text-gray-800">
-                    <ReactMarkdown>{msg.text}</ReactMarkdown>
-                  </div>
-                ) : (
-                  msg.text
-                )}
               </div>
-              {msg.role === "user" && (
-                <div className="h-6 w-6 rounded-full bg-violet-600 flex items-center justify-center text-xs text-white shrink-0 mt-0.5">
-                  U
-                </div>
-              )}
-            </div>
-          ))}
-
-          {loading && (
-            <div className="flex gap-2.5 justify-start">
-              <div className="h-6 w-6 rounded-full bg-violet-100 flex items-center justify-center shrink-0 mt-0.5 text-violet-600">
-                <Icon name="flask" size={13} />
-              </div>
-              <div className="bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5">
-                <ThinkingDots />
-              </div>
-            </div>
+            )
           )}
+          {loading && <p className="num border-l-2 border-accent pl-3.5 text-[12px] text-ink-3">reading the report…</p>}
           <div ref={bottomRef} />
         </div>
       )}
 
-      {/* Input */}
-      <form
-        onSubmit={handleSubmit}
-        className={`flex gap-2 px-3 py-3 ${messages.length > 0 ? "border-t border-gray-100" : ""}`}
-      >
+      <form onSubmit={handleSubmit} className={`flex gap-2 px-4 py-3 ${messages.length > 0 ? "border-t border-rule" : ""}`}>
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask anything about this report…"
+          aria-label="Follow-up question"
           disabled={loading}
-          className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-3.5 py-2 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-300 disabled:opacity-50"
+          className="min-w-0 flex-1 rounded-[6px] border border-rule bg-page px-3.5 py-2 text-[15px] text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none disabled:opacity-50"
         />
         <button
           type="submit"
           disabled={!input.trim() || loading}
-          className="rounded-lg bg-violet-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
+          className="rounded-[6px] bg-accent px-4 py-2 text-[14px] font-semibold text-[var(--tour-on-accent)] hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
         >
           Ask
         </button>
       </form>
-    </div>
-  );
-}
-
-function ThinkingDots() {
-  return (
-    <div className="flex gap-1 items-center h-4">
-      {[0, 1, 2].map((i) => (
-        <span
-          key={i}
-          className="block h-1.5 w-1.5 rounded-full bg-violet-400 animate-bounce"
-          style={{ animationDelay: `${i * 0.15}s` }}
-        />
-      ))}
-    </div>
+    </section>
   );
 }
